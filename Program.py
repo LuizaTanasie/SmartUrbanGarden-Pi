@@ -6,7 +6,7 @@ import RPi.GPIO as GPIO
 from HttpUtils import HttpUtils
 from SmartPotData import SmartPotData
 
-api_url = ""
+api_url = "https://192.168.0.63:44391/api/SmartPot/SaveSensorsData"
 
 dht_device = adafruit_dht.DHT22(board.D4)
 rain_channel = 14
@@ -56,7 +56,7 @@ while True:
                 temperature_c, humidity, needs_water, is_raining)
         )
         data = SmartPotData(temperature_c,humidity,needs_water,is_raining)
-        HttpUtils.post(api_url, data)
+        print(HttpUtils.post(api_url, data))
 
     except RuntimeError as error:
         print(error.args[0])
