@@ -2,68 +2,71 @@ import time
 import board
 import adafruit_dht
 import RPi.GPIO as GPIO
+import busio
+import digitalio
+import board
+import adafruit_mcp3xxx.mcp3008 as MCP
+from adafruit_mcp3xxx.analog_in import AnalogIn
 
+from Config import Config
 from HttpUtils import HttpUtils
 from SmartPotData import SmartPotData
 
-api_url = "https://192.168.0.63:44391/api/SmartPot/SaveSensorsData"
-
-dht_device = adafruit_dht.DHT22(board.D4)
-rain_channel = 14
-soil_moisture_channel = 15
-needs_water = False
-is_raining = False
-
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(rain_channel, GPIO.IN)
-
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(soil_moisture_channel, GPIO.IN)
+config = Config()
+dht_device = None
+soil_moisture_channel = None
 
 
-def rainCallback(channel):
-    global is_raining
-    if GPIO.input(channel) == 0:
-        is_raining = True
+def initialize():
+    global dht_device, soil_moisture_channel
+    # config temperature and humidity sensor
+    dht_device = adafruit_dht.DHT22(board.D4)
+
+    # config rain sensor
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(config.RAIN_CHANNEL, GPIO.IN)
+
+    # config soil moisture sensor
+    spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+    cs = digitalio.DigitalInOut(board.D5)
+    mcp = MCP.MCP3008(spi, cs)
+    soil_moisture_channel = AnalogIn(mcp, MCP.P0)
+
+
+def get_soil_moisture():
+    percentage = 100 - (((soil_moisture_channel.value - config.SOIL_VERY_WET) * 100) / (config.SOIL_VERY_DRY - config.SOIL_VERY_WET))
+    return percentage
+
+
+def get_is_raining():
+    if GPIO.input(config.RAIN_CHANNEL):
+        return False
     else:
-        is_raining = False
-
-def soilMoistureCallback(channel):
-    global needs_water
-    print(GPIO.input(channel))
-    if GPIO.input(channel):
-        needs_water = True
-    else:
-        needs_water = False
+        return True
 
 
+initialize()
 while True:
     try:
-        # Print the values to the serial port
         temperature_c = dht_device.temperature
         humidity = dht_device.humidity
-        if GPIO.input(soil_moisture_channel):
-            needs_water = True
-        else:
-            needs_water = False
 
-        if GPIO.input(rain_channel):
-            is_raining = False
-        else:
-            is_raining = True
+        is_raining = get_is_raining()
+        soil_moisture = get_soil_moisture()
         print(
-            "Temp: {:.1f} C    Humidity: {}%    Needs water: {}     Is raining: {} ".format(
-                temperature_c, humidity, needs_water, is_raining)
+            "Temp: {:.1f} C    Humidity: {}%    Soil moisture: {:.2f}%     Is raining: {} ".format(
+                temperature_c, humidity, soil_moisture, is_raining)
         )
-        data = SmartPotData(temperature_c,humidity,needs_water,is_raining)
-        print(HttpUtils.post(api_url, data))
+        data = SmartPotData(temperature_c, humidity, soil_moisture, is_raining)
+        print(HttpUtils.post(config.API + "SaveSensorsData", data))
 
     except RuntimeError as error:
         print(error.args[0])
         time.sleep(2.0)
         continue
     except Exception as error:
-        dht_device.exit()
-        raise error
+        print(error.args[0])
+        time.sleep(5.0)
+        continue
 
     time.sleep(5.0)
