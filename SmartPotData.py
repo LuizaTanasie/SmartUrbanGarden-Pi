@@ -2,7 +2,8 @@ import json
 
 
 class SmartPotData:
-    def __init__(self, temperature, humidity, soil_moisture, is_raining):
+    def __init__(self, pi_id, temperature, humidity, soil_moisture, is_raining):
+        self.pi_id = pi_id
         self.temperature = temperature
         self.humidity = humidity
         self.soil_moisture = soil_moisture

@@ -1,7 +1,6 @@
 import requests
 import json
 
-
 class HttpUtils:
     @staticmethod
     def post(url, data):
