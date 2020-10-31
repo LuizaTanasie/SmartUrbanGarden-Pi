@@ -1,5 +1,5 @@
 import time
-import board
+import datetime
 import adafruit_dht
 import RPi.GPIO as GPIO
 import busio
@@ -97,7 +97,7 @@ while True:
             except Exception as error:
                 soil_moisture = None
 
-        data = SmartPotData(pi_id, temperature_c, humidity, soil_moisture, is_raining)
+        data = SmartPotData(pi_id, temperature_c, humidity, soil_moisture, is_raining, str(datetime.datetime.utcnow()))
         print(HttpUtils.post(config.API + "SaveSensorsData", data))
 
     except RuntimeError as error:
