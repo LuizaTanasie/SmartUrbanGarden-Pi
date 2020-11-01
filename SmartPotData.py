@@ -14,3 +14,14 @@ class SmartPotData:
     def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__,
                           sort_keys=True, indent=4)
+
+    def to_string(self):
+        return ";".join((self.xstr(self.pi_id), self.xstr(self.temperature), self.xstr(self.humidity),
+                         self.xstr(self.soil_moisture), self.xstr(self.light), self.xstr(self.is_raining),
+                         self.xstr(self.measured_at_time)))
+
+    def xstr(self, s):
+        if s is None:
+            return ''
+        else:
+            return str(s)

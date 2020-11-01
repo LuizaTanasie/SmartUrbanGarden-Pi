@@ -7,12 +7,13 @@ import digitalio
 import board
 import adafruit_mcp3xxx.mcp3008 as MCP
 from adafruit_mcp3xxx.analog_in import AnalogIn
-from uuid import getnode as get_mac
+import requests
 
 
 from Config import Config
 from HttpUtils import HttpUtils
 from PiUtils import PiUtils
+from FileUtils import FileUtils
 from SmartPotData import SmartPotData
 
 config = Config()
@@ -107,6 +108,19 @@ def get_is_raining():
         return True
 
 
+def send_backups():
+    lines = FileUtils.read_lines(config.BACKUP_FILE)
+    lines = lines[-config.BACKUP_ENTRIES_TO_SEND:]
+
+    for line in lines:
+        sensors_data = line.split(";")
+        smart_pot = SmartPotData(sensors_data[0], sensors_data[1], sensors_data[2], sensors_data[3], sensors_data[4],
+                                 sensors_data[5], sensors_data[6])
+        HttpUtils.post(config.API + "SaveSensorsData", smart_pot)
+    FileUtils.remove_file(config.BACKUP_FILE)
+    print("Backups sent")
+
+
 initialize()
 while True:
     try:
@@ -136,7 +150,21 @@ while True:
                     light = None
 
         data = SmartPotData(pi_id, temperature_c, humidity, soil_moisture, light, is_raining, str(datetime.datetime.utcnow()))
-        print(HttpUtils.post(config.API + "SaveSensorsData", data))
+        try:
+            if FileUtils.file_exists(config.BACKUP_FILE):
+                send_backups()
+            print(HttpUtils.post(config.API + "SaveSensorsData", data))
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            print("Server down")
+            if FileUtils.get_file_size(config.BACKUP_FILE) > config.BACKUP_FILE_MAX_SIZE:
+                FileUtils.remove_file(config.BACKUP_FILE)
+            FileUtils.append(config.BACKUP_FILE, data.to_string())
+        except requests.exceptions.HTTPError:
+            print("Server error")
+            if FileUtils.get_file_size(config.BACKUP_FILE) > config.BACKUP_FILE_MAX_SIZE:
+                FileUtils.remove_file(config.BACKUP_FILE)
+            FileUtils.append(config.BACKUP_FILE, data.to_string())
+
 
     except RuntimeError as error:
         print(error.args[0])
