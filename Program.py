@@ -70,7 +70,7 @@ def initialize_mcp():
 def initialize_soil_sensor(mcp):
     global soil_moisture_channel, soil_sensor_error
     try:
-        soil_moisture_channel = AnalogIn(mcp, MCP.P1)
+        soil_moisture_channel = AnalogIn(mcp, MCP.P2)
     except Exception as error:
         print(error.args[0])
         soil_sensor_error = True
@@ -86,16 +86,16 @@ def initialize_photoresistor(mcp):
 
 
 def get_soil_moisture():
-    return get_percentage(soil_moisture_channel.value, config.SOIL_VERY_WET, config.SOIL_VERY_DRY)
+    return get_percentage(soil_moisture_channel.value, config.SOIL_VERY_DRY, config.SOIL_VERY_WET)
 
 
 def get_light_intensity():
-    return get_percentage(photoresistor_channel.value, config.STRONG_LIGHT, config.DIM_LIGHT)
+    return get_percentage(photoresistor_channel.value, config.DIM_LIGHT, config.STRONG_LIGHT)
 
 
-def get_percentage(value, min, max):
-    percentage = 100 - (((value - max) * 100) /
-                        (min - max))
+def get_percentage(value, minValue, maxValue):
+    percentage = 100 - (((value - maxValue) * 100) /
+                        (minValue - maxValue))
     percentage = 100 if percentage > 100 else percentage
     percentage = 0 if percentage < 0 else percentage
     return percentage
