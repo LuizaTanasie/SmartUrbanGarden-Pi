@@ -116,7 +116,7 @@ def send_backups():
         sensors_data = line.split(";")
         smart_pot = SmartPotData(sensors_data[0], sensors_data[1], sensors_data[2], sensors_data[3], sensors_data[4],
                                  sensors_data[5], sensors_data[6])
-        HttpUtils.post(config.API + "SaveSensorsData", smart_pot)
+        HttpUtils.post(config.API + "SaveMeasurement", smart_pot)
     FileUtils.remove_file(config.BACKUP_FILE)
     print("Backups sent")
 
@@ -153,7 +153,7 @@ while True:
         try:
             if FileUtils.file_exists(config.BACKUP_FILE):
                 send_backups()
-            print(HttpUtils.post(config.API + "SaveSensorsData", data))
+            print(HttpUtils.post(config.API + "SaveMeasurement", data))
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             print("Server down")
             if FileUtils.get_file_size(config.BACKUP_FILE) > config.BACKUP_FILE_MAX_SIZE:
