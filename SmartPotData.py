@@ -2,13 +2,12 @@ import json
 
 
 class SmartPotData:
-    def __init__(self, pi_id, temperature, humidity, soil_moisture, light, is_raining, measured_at_time):
+    def __init__(self, pi_id, temperature, humidity, soil_moisture, light, measured_at_time):
         self.pi_id = pi_id
         self.temperature = temperature
         self.humidity = humidity
         self.soil_moisture = soil_moisture
         self.light = light
-        self.is_raining = is_raining
         self.measured_at_time = measured_at_time
 
     def to_json(self):
@@ -17,7 +16,7 @@ class SmartPotData:
 
     def to_string(self):
         return ";".join((self.xstr(self.pi_id), self.xstr(self.temperature), self.xstr(self.humidity),
-                         self.xstr(self.soil_moisture), self.xstr(self.light), self.xstr(self.is_raining),
+                         self.xstr(self.soil_moisture), self.xstr(self.light),
                          self.xstr(self.measured_at_time)))
 
     def xstr(self, s):

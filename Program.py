@@ -24,14 +24,12 @@ pi_id = PiUtils.get_serial()
 
 dht_sensor_error = False
 soil_sensor_error = False
-rain_sensor_error = False
 photoresistor_error = False
 mcp_error = False
 
 
 def initialize():
     initialize_dht_sensor()
-    initialize_rain_sensor()
     mcp = initialize_mcp()
     initialize_soil_sensor(mcp)
     initialize_photoresistor(mcp)
@@ -44,17 +42,6 @@ def initialize_dht_sensor():
     except Exception as error:
         print(error.args[0])
         dht_sensor_error = True
-
-
-def initialize_rain_sensor():
-    global rain_sensor_error
-    try:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(config.RAIN_CHANNEL, GPIO.IN)
-    except Exception as error:
-        print(error.args[0])
-        rain_sensor_error = True
-
 
 def initialize_mcp():
     global mcp_error
@@ -100,14 +87,6 @@ def get_percentage(value, minValue, maxValue):
     percentage = 0 if percentage < 0 else percentage
     return percentage
 
-
-def get_is_raining():
-    if GPIO.input(config.RAIN_CHANNEL):
-        return False
-    else:
-        return True
-
-
 def send_backups():
     lines = FileUtils.read_lines(config.BACKUP_FILE)
     lines = lines[-config.BACKUP_ENTRIES_TO_SEND:]
@@ -115,7 +94,7 @@ def send_backups():
     for line in lines:
         sensors_data = line.split(";")
         smart_pot = SmartPotData(sensors_data[0], sensors_data[1], sensors_data[2], sensors_data[3], sensors_data[4],
-                                 sensors_data[5], sensors_data[6])
+                                 sensors_data[5])
         HttpUtils.post(config.API + "SaveMeasurement", smart_pot)
     FileUtils.remove_file(config.BACKUP_FILE)
     print("Backups sent")
@@ -131,11 +110,6 @@ while True:
             except Exception as error:
                 temperature_c = None
                 humidity = None
-        if not rain_sensor_error:
-            try:
-                is_raining = get_is_raining()
-            except Exception as error:
-                is_raining = None
 
         if not mcp_error:
             if not soil_sensor_error:
@@ -149,7 +123,7 @@ while True:
                 except Exception as error:
                     light = None
 
-        data = SmartPotData(pi_id, temperature_c, humidity, soil_moisture, light, is_raining, str(datetime.datetime.utcnow()))
+        data = SmartPotData(pi_id, temperature_c, humidity, soil_moisture, light, str(datetime.datetime.utcnow()))
         try:
             if FileUtils.file_exists(config.BACKUP_FILE):
                 send_backups()
@@ -168,12 +142,12 @@ while True:
 
     except RuntimeError as error:
         print(error.args[0])
-        time.sleep(2.0)
+        time.sleep(config.MEASUREMENT_TIME)
         continue
 
     except Exception as error:
         print(error.args[0])
-        time.sleep(5.0)
+        time.sleep(config.MEASUREMENT_TIME)
         continue
 
-    time.sleep(5.0)
+    time.sleep(config.MEASUREMENT_TIME)
