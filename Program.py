@@ -123,7 +123,7 @@ while True:
                 except Exception as error:
                     light = None
 
-        data = SmartPotData(pi_id, temperature_c, humidity, soil_moisture, light, str(datetime.datetime.utcnow()))
+        data = SmartPotData(pi_id, temperature_c, humidity, soil_moisture, light, str(datetime.datetime.now()))
         try:
             if FileUtils.file_exists(config.BACKUP_FILE):
                 send_backups()
@@ -142,12 +142,14 @@ while True:
 
     except RuntimeError as error:
         print(error.args[0])
-        time.sleep(config.MEASUREMENT_TIME)
+        time.sleep(config.ERROR_MEASUREMENT_TIME)
         continue
 
     except Exception as error:
         print(error.args[0])
-        time.sleep(config.MEASUREMENT_TIME)
+        time.sleep(config.ERROR_MEASUREMENT_TIME)
         continue
-
-    time.sleep(config.MEASUREMENT_TIME)
+    if temperature_c is None or humidity is None or light is None or soil_moisture is None:
+        time.sleep(config.ERROR_MEASUREMENT_TIME)
+    else:
+        time.sleep(config.MEASUREMENT_TIME)
